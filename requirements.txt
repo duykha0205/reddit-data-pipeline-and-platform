@@ -1,0 +1,5 @@
+configparser
+s3fs
+praw
+numpy
+pandas
