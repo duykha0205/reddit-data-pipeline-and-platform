@@ -1,89 +1,4 @@
-# reddit-data-pipeline-and-platform
-Data Pipeline with Reddit, Airflow, Celery, Postgres, S3, AWS Glue, Athena, and Redshift
-
-
-```bash
-
-#microk8s
-microk8s kubectl get all -A
-microk8s enable dns
-microk8s enable hostpath-storage
-
-microk8s kubectl delete all --all -n airflow
-microk8s kubectl delete namespace airflow
-sudo microk8s refresh-certs -e  ca.crt
-sudo microk8s refresh-certs -e  server.crt
-sudo microk8s refresh-certs -e  front-proxy-client.crt
-
-
-chmod 600 ~/.kube/config
-microk8s config > ~/.kube/config
-sudo snap alias microk8s.kubectl kubectl
-kubectl create namespace airflow
-
-# set up helm with microk8s
-
-
-helm pull apache-airflow/airflow
-tar -xvzf yourfile.tgz
-
-helm install  airflow ./airflow -f ./airflow/values.yaml -n airflow
-helm install  airflow ./deployments/airflow -f ./deployments/airflow/values.yaml -n airflow
-helm upgrade  airflow ./airflow -f ./airflow/values.yaml -n airflow
-helm uninstall airflow -n airflow 
-
-microk8s kubectl port-forward -n kube-system service/kubernetes-dashboard 10443:443
-microk8s kubectl port-forward -n airflow service/airflow-webserver 8088:8080
-
-microk8s kubectl exec pod/airflow-webserver-548654c6c9-rzv4n -n airflow -i -t -- bash
-
-
-```
-
-1. Set up code test
-```bash
-https://old.reddit.com/prefs/apps/
-```
-2. set up k8s cluster with micrk8s, set up helm 
-```bash
-microk8s enable helm3
-microk8s enable dns
-microk8s enable hostpath-storage
-microk8s enable storage
-chmod 600 ~/.kube/config
-microk8s config > ~/.kube/config
-
-
-# command fix bug
-sudo microk8s reset
-sudo microk8s refresh-certs -e  ca.crt
-sudo microk8s refresh-certs -e  server.crt
-sudo microk8s refresh-certs -e  front-proxy-client.crt
-
-```
-1. Mount dag values
-2. build image airlfow
-```bash
-docker build -t custom-airflow:latest -f ./deployments/airflow/dockerfile .
-docker tag custom-airflow:latest duykha0205/custom-airflow:latest
-docker push duykha0205/custom-airflow:latest
-
-
-```
-4. set up airflow
-```bash
-kubectl create namespace airflow
-helm install  airflow ./deployments/airflow -f ./deployments/airflow/values.yaml -n airflow
-kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
-
-
-# command fix bug :))
-helm uninstall airflow -n airflow 
-```
-5. Set up code test
-
-
-# Data Pipeline Project
+# Data Platform Project (reddit data pipeline)
 
 ## Overview
 This project implements an automated data pipeline that fetches data from APIs, processes it, and makes it available for analysis using various AWS services. The pipeline is orchestrated using Apache Airflow running on Kubernetes (microk8s).
@@ -94,12 +9,12 @@ I am developing a project that uses Kubernetes (microk8s), Helm, and Docker to d
 
 
 
-
-
 ## Architecture
 ```
 API → Airflow (K8s, Microk8s, Helm chart) → S3 → Lambda → Glue Job → Glue Crawler → Athena/Redshift
 ```
+
+![Architecture](./assets/architect.png)
 
 
 ## Technologies Used
@@ -129,8 +44,29 @@ API → Airflow (K8s, Microk8s, Helm chart) → S3 → Lambda → Glue Job → G
 # Install microk8s
 sudo snap install microk8s --classic
 
-# Enable required addons
+# command for reset and fix bug
 microk8s enable dns storage helm3
+microk8s enable helm3
+microk8s enable dns
+microk8s enable hostpath-storage
+microk8s enable storage
+chmod 600 ~/.kube/config
+microk8s config > ~/.kube/config
+
+microk8s kubectl delete all --all -n airflow
+microk8s kubectl delete namespace airflow
+
+sudo microk8s reset
+sudo microk8s refresh-certs -e  ca.crt
+sudo microk8s refresh-certs -e  server.crt
+sudo microk8s refresh-certs -e  front-proxy-client.crt
+
+#microk8s
+microk8s kubectl get all -A
+microk8s enable dns
+microk8s enable hostpath-storage
+
+sudo snap alias microk8s.kubectl kubectl
 ```
 
 ### 2. Deploy Airflow using Helm
@@ -140,6 +76,29 @@ helm repo add apache-airflow https://airflow.apache.org
 
 # Install Airflow
 helm install airflow apache-airflow/airflow
+
+docker build -t custom-airflow:latest -f ./deployments/airflow/dockerfile .
+docker tag custom-airflow:latest duykha0205/custom-airflow:latest
+docker push duykha0205/custom-airflow:latest
+
+helm pull apache-airflow/airflow
+tar -xvzf yourfile.tgz
+
+kubectl create namespace airflow
+helm install  airflow ./deployments/airflow -f ./deployments/airflow/values.yaml -n airflow
+kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
+
+helm install  airflow ./airflow -f ./airflow/values.yaml -n airflow
+helm install  airflow ./deployments/airflow -f ./deployments/airflow/values.yaml -n airflow
+helm upgrade  airflow ./airflow -f ./airflow/values.yaml -n airflow
+helm uninstall airflow -n airflow 
+
+# command check bug container
+microk8s kubectl port-forward -n kube-system service/kubernetes-dashboard 10443:443
+microk8s kubectl port-forward -n airflow service/airflow-webserver 8088:8080
+microk8s kubectl exec pod/airflow-webserver-548654c6c9-rzv4n -n airflow -i -t -- bash
+
+
 ```
 
 ### 3. Configure AWS Services
@@ -149,23 +108,39 @@ helm install airflow apache-airflow/airflow
 - Configure Redshift cluster
 - Set up CloudWatch logging
 
-## Project Structure
+### 4. Reddit api
+```bash
+https://old.reddit.com/prefs/apps/
 ```
-project-root/
-├── airflow/
-│   ├── dags/
-│   │   └── data_pipeline.py
-│   └── plugins/
-├── helm/
-│   └── values.yaml
-├── docker/
-│   └── Dockerfile
-├── lambda/
-│   └── trigger_glue.py
-├── glue/
-│   └── transform_job.py
-└── README.md
-```
+
+
+## Output
+
+### Airlfow
+![Architecture](./assets/airflow.png)
+
+### S3 upload
+![Architecture](./assets/s3_upload.png)
+
+### Lambda and S3
+![Architecture](./assets/lambda_s3_trigger.png)
+
+### Glue Job
+![Architecture](./assets/glue_running.png)
+
+### Glue Crawler
+![Architecture](./assets/gue_crawler_run.png)
+
+### Athena
+![Architecture](./assets/athena_query.png)
+
+### Redshift
+![Architecture](./assets/redshift_query.png)
+
+### CloudWatch
+![Architecture](./assets/cloudwatch_lambda.png)
+
+
 
 ## Configuration
 1. Update `helm/values.yaml` with your specific configurations
